@@ -1,5 +1,9 @@
 <nav class="navbar fixed-top navbar-expand-lg navbar-light">
   <a class="navbar-brand" id="navbar-logo-link" href="<%= MASTER_URL %>"><img class="logo rounded-circle" src="/media/logoLight.png"></a>
+  <a class="btn btn-info btn-sm collapse" role="button" id="navbar-get-scampy-button" href="<%= MASTER_URL %>">
+    <small>Get your <b>secret campfire</b> here</small>
+  </a>
+
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-supported-content" aria-controls="navbar-supported-content" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -10,8 +14,8 @@
     </ul>
 
     <form class="form-inline">
-      <button class="btn btn-primary mr-1 collapse" type="button" id="navbar-dashboard-button" title="Dashboard">
-        <span class='oi oi-home' title='Dashboard' aria-hidden='true'></span>
+      <button class="btn btn-primary mr-1 collapse" type="button" id="navbar-dashboard-button">
+        <span class='oi oi-home' aria-hidden='true'></span>
       </button>
       <button class="btn btn-primary collapse" type="button" id="navbar-edit-button">
         <span class='oi oi-pencil' title='Edit' aria-hidden='true'></span>
@@ -23,8 +27,8 @@
         class='btn btn-primary collapse'>
       <span class='oi oi-plus' title='Follow' aria-hidden='true'></span>
        <span class='label'>Follow</span></button>
-      <button class="btn btn-primary collapse" type="button" id="navbar-login-button" title="Login">
-        <span class='oi oi-key' title='Login' aria-hidden='true'></span>
+      <button class="btn btn-primary collapse" type="button" id="navbar-login-button">
+        <span class='oi oi-key' aria-hidden='true'></span>
       </button>
     </form>
   </div>
@@ -44,6 +48,9 @@ var Navbar = new function() {
   this.init = function() {
     this.activateLoginButton(); 
     this.drawActiveBlogWidget(); 
+
+    $("#navbar-logo-link").popover(
+      Utils.makeBsTooltipCfg('Get your <b>secret campfire</b> here'));
   };
 
   this.drawActiveBlogWidget = function() {
@@ -53,16 +60,20 @@ var Navbar = new function() {
       if (!urls || !urls.length)
       {
         // try again later
+        $("#navbar-get-scampy-button").show();
         $("#active-blog-display").html("").hide();
         setTimeout(function() {
           nb.drawActiveBlogWidget();
-        }, 3000);
+        }, 10000);
         return;
       }
 
-      //urls.sort();
-
+      $("#navbar-get-scampy-button").hide();
       nb.activateDashButton(); 
+
+      var activeUrl = urls[0]; // pick up the active url before sorting
+
+      urls.sort(); // sort to keep the menu list consistent
 
       var menuItemsHtml = "";
       for (var ui=0; ui < urls.length; ui++)
@@ -86,27 +97,33 @@ var Navbar = new function() {
         + menuItemsHtml
         + '</div></div>';
       }
-      var displayUrl = Utils.prettifyBlessedHostUrlForDisplay(urls[0]);
+      var displayUrl = Utils.prettifyBlessedHostUrlForDisplay(activeUrl);
       $("#active-blog-display").html(
-        "<span class='oi oi-fire' id='active-blog-tooltip'"
+        //"<span class='oi oi-fire' id='active-blog-visit-button'"
+        "<span id='active-blog-visit-button'"
         + " style='cursor: pointer' aria-hidden='true'"
-        + " data-url='" + urls[0] + "/dashboard'></span> "
+        + " data-url='" + activeUrl + "'></span> "
         + "<span id='active-blog'"
-        + " title='Connected to " + displayUrl + "'"
         + " style='cursor:pointer;font-weight:bold;'>"
         + displayUrl
         + "</span> "
         + dropdownHtml).show()
-      $("#active-blog").click(function() {
-        SetBlogWidget.open();  
-      });
+      $("#active-blog").click(function(e) {
+        Utils.handleClick(e, $("#active-blog-visit-button").data('url'));
+        //SetBlogWidget.open();  
+      }).popover(Utils.makeBsTooltipCfg('Visit | ' + displayUrl));
       $("#active-blog-display .dropdown-item").click(function(e) {
         var url = $(this).data('url');
         SetBlogWidget.setBlog(url);
         var displayUrl = Utils.prettifyBlessedHostUrlForDisplay(url);
-        $("#active-blog").html(displayUrl)
-          .attr("title", "Connected to " + displayUrl);
-        $("#active-blog-tooltip").data('url', url + "/dashboard");
+        $("#active-blog").html(displayUrl);
+        $("#active-blog").data('bs.popover')
+          .config.content = 'Visit | ' + displayUrl;
+        $("#active-blog-visit-button").data('url', url);
+        $("#active-blog-visit-button").data('bs.popover')
+          .config.content = 'Visit | ' + displayUrl;
+        $("#navbar-dashboard-button").data('bs.popover')
+          .config.content = 'Dashboard | ' + displayUrl;
       });
       $("#active-blog-display .dropdown-item").hover(function() {
         $(this).find(".x").show();
@@ -121,9 +138,12 @@ var Navbar = new function() {
         SetBlogWidget.delBlog(url);
         return false;
       });
-      $("#active-blog-tooltip").mouseup(function(e) {
+      $("#active-blog-visit-button").mouseup(function(e) {
         Utils.handleClick(e, $(this).data('url'));
-      });
+      }).popover(Utils.makeBsTooltipCfg('Visit | ' + displayUrl));
+
+      $("#navbar-dashboard-button").popover(
+        Utils.makeBsTooltipCfg('Dashboard | ' + displayUrl));
 
       $(document).keydown(function(e) {
         if (e.which == 192 && e.ctrlKey) {
@@ -157,13 +177,26 @@ var Navbar = new function() {
   };
 
   this.activateLoginButton = function() {
-    SetBlogWidget.isOwner(function(isOwner) {
-      if (isOwner)
-        return;
+    var thisUrl = window.location.host;
+    SetBlogWidget.getBlogs(function(urls) {
+      var thisUrlIsInBlogList = false;
+      for (var ui=0; urls && urls.length && ui < urls.length; ui++)
+        if (urls[ui].indexOf(thisUrl) != -1)
+        {
+          thisUrlIsInBlogList = true;
+          break;
+        }
 
-      $("#navbar-login-button").mouseup(function(e) {
-        Utils.handleClick(e, "/dashboard");
-      }).show();
+      SetBlogWidget.isOwner(function(isOwner) {
+        if (isOwner && thisUrlIsInBlogList)
+          return;
+
+        $("#navbar-login-button").mouseup(function(e) {
+          Utils.handleClick(e, "/dashboard");
+        })
+        .popover(Utils.makeBsTooltipCfg('Sign in | ' + window.location.host))
+        .show();
+      });
     });
   };
 
@@ -248,9 +281,9 @@ var Navbar = new function() {
       
         var checkUrl = blog
             + "/follow/check/"
-            + encodeURIComponent(followButtonConfig.uri);
+            + Utils.encodeScampyUriParam(followButtonConfig.uri);
 
-        $.getJSON(checkUrl, function(data) {
+        $.getJSON(Utils.timestampUrl(checkUrl), function(data) {
           if (data.is_following)
           {
             $("#follow-button .oi").removeClass("oi-plus").addClass("oi-eye");

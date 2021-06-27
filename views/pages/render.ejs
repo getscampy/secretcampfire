@@ -6,7 +6,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-infinitescroll/3.0.5/infinite-scroll.pkgd.min.js"></script>
   <link rel="stylesheet" type="text/css" href="/stylesheets/render.css" />
-  <% include ../partials/custom.ejs %>
+
+  <% if (typeof site_template !== 'undefined' && site_template.dark_mode) { %>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/dark.css" />
+  <% }  %>
+
+  <% if (typeof site_template !== 'undefined' && site_template.custom_head) { %>
+   <%- site_template.custom_head %>
+  <% }  %>
 </head>
 
 <body>
@@ -42,7 +49,7 @@
     <% include ../partials/loading_spinner.ejs %>
   </div>
   <div id="feed-grid-button" class="collapse text-center">
-    <div class="button more-button">more</div>
+    <div class="d-none button more-button">more</div>
   </div>
 
   <div id="feed-grid-template" class="d-none">
@@ -85,6 +92,9 @@
               <div class="date small"></div>
             </div>
             <div class="col text-right">
+              <!--
+              <div class='like-button oi oi-heart action-bar-button' title='Like' aria-hidden='true'></div>
+              -->
               <div class='reblog-button oi oi-loop action-bar-button' title='Reblog' aria-hidden='true'></div>
             </div>
           </div><!--row-->
@@ -109,6 +119,7 @@
 
   <script>
     <% include ../partials/reblog_button.ejs %>
+    <% include ../partials/like_button.ejs %>
     <% include ../partials/render_feed.ejs %>
     <% include ../partials/render_post.ejs %>
     <% include ../partials/follow_button.ejs %>
@@ -116,10 +127,7 @@
   
     var renderer = null;
   
-    $.getJSON("<%= uri %>", function(data) {
-      if (data.style_url)
-        Utils.addCss(data.style_url);
-
+    $.getJSON(Utils.timestampUrl("<%= uri %>"), function(data) {
       if (data.posts)
       {
         // feed view
@@ -136,6 +144,11 @@
               * 5
             <% } else { %>
               * 3
+            <% } %>,
+          "random": <% if (random) { %>
+              true
+            <% } else { %>
+              false
             <% } %>
         };
         renderer = new RenderFeed(cfg);

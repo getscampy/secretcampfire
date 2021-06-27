@@ -7,7 +7,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-infinitescroll/3.0.5/infinite-scroll.pkgd.min.js"></script>
   <link rel="stylesheet" type="text/css" href="/stylesheets/render.css" />
   <link rel="stylesheet" type="text/css" href="/stylesheets/dashboard.css" />
-  <% include ../partials/custom.ejs %>
+
+  <% if (typeof site_template !== 'undefined' && site_template.dark_mode) { %>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/dark.css" />
+  <% }  %>
 </head>
 
 <body>
@@ -63,19 +66,20 @@
         <div id="posts" class="grid">
           <div class="grid-sizer col-md-12"></div>
         </div>
+
+        <div id="posts-status" class="collapse text-center">
+          <% include ../partials/loading_spinner.ejs %>
+        </div>
+        <div id="posts-button" class="collapse text-center">
+          <div class="d-none button more-button">more</div>
+        </div>
+
       </div><!--col-->
       <div class="col"><div class="news-container sticky-top py-1">
         <div id="news-right" class="collapse"></div>
         <% include ../partials/footer.ejs %>
       </div></div>
     </div><!--row-->
-
-    <div id="posts-status" class="collapse text-center">
-      <% include ../partials/loading_spinner.ejs %>
-    </div>
-    <div id="posts-button" class="collapse text-center">
-      <div class="button more-button">more</div>
-    </div>
 
     <div id="posts-template" class="d-none">
       <div class="grid-item col-md-12">
@@ -96,6 +100,7 @@
         <div class="card-action-bar p-1">
           <div class="row">
             <div class="col text-right">
+              <div class='d-inline-block card-like-button oi oi-heart action-bar-button' title='Like' aria-hidden='true'></div>
               <div class='d-inline-block card-reblog-button oi oi-loop action-bar-button' title='Reblog' aria-hidden='true'></div>
               <div class='collapse card-post-now-button oi oi-check action-bar-button' title='Post now' aria-hidden='true'></div>
             </div>
@@ -111,53 +116,69 @@
     <div class="modal-dialog" role="document"><div class="modal-content">
       <div class="modal-header">
         <div class="avatar collapse"></div>
-        <h5 class="modal-title">New post</h5>
+        <h5 class="modal-title">
+          <span class="action">New post</span>
+          <span class="target-name"></span>
+        </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div><!--header-->
+
       <div class="modal-body"><form id="create-post-form" data-mode="new">
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" class="form-control form-control-sm form-post-title" 
-            value="" placeholder="Title" autofocus />
-        </div>
+        <div class="form-group"><div class="form-row">
+          <div class="col-md-2 text-sm-left"><label>Title</label></div>
+          <div class="col-md-10"><input type="text" 
+            class="form-control form-control-sm form-post-title" 
+            value="" placeholder="Title" autofocus /></div>
+        </div></div>
 
-        <div class="form-group">
-          <label>Image</label>
-          <input type="text" class="form-control form-control-sm form-post-thumb" 
-            value="" placeholder="Thumbnail URL" />
-          <input type="text" class="form-control form-control-sm form-post-image" 
-            value="" placeholder="Image URL" />
+        <div class="form-group"><div class="form-row">
+          <div class="col-md-2 text-sm-left form-post-preview">
+            <label>Image</label></div>
+          <div class="col-md-10">
+            <input type="text" 
+              class="form-control form-control-sm form-post-thumb" 
+              value="" placeholder="Thumbnail URL" />
+            <input type="text" 
+              class="form-control form-control-sm form-post-image" 
+              value="" placeholder="Image URL" />
 
-          <div class="form-post-image-uploader-wraper collapse">
-            <div class="progress form-img-file-progress" style="height: 0px">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <input type="file" class="form-control-file form-control-sm form-img-file" accept="image/*" data-max-size="5000"/>
-          </div><!--form-post-image-uploader-wrapper-->
-        </div>
+            <div class="form-post-image-uploader-wrapper collapse">
+              <div class="progress form-img-file-progress" style="height: 0px">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <input type="file" class="form-control-file form-control-sm form-img-file" accept="image/*" data-max-size="3000"/>
+            </div><!--form-post-image-uploader-wrapper-->
+          </div>
+        </div></div>
 
-        <div class="form-group">
-          <label>URL</label>
-          <input type="text" class="form-control form-control-sm form-post-url" 
-            value="" placeholder="URL" />
-        </div>
-          <input type="hidden" class="form-post-reblog-url" value="">
-          <input type="hidden" class="form-post-enqueue" value="">
-          <input type="hidden" class="form-post-update-id" value="">
+        <div class="form-group"><div class="form-row">
+          <div class="col-md-2"><label>Link to</label></div>
+          <div class="col-md-10"><input type="text" 
+            class="form-control form-control-sm form-post-url" 
+            value="" placeholder="Link URL" /></div>
+        </div></div>
 
-        <div class="form-group">
-          <label>Text</label>
-          <textarea class="form-control form-control-sm form-post-text" rows="5" placeholder="Text"></textarea>
-        </div>
+        <input type="hidden" class="form-post-reblog-url" value="">
+        <input type="hidden" class="form-post-enqueue" value="">
+        <input type="hidden" class="form-post-update-id" value="">
 
-        <div class="form-group">
-          <label>Tags</label>
-          <input type="text" class="form-control form-control-sm form-post-tags" 
-            value="" placeholder="Tags" />
-        </div>
+        <div class="form-group"><div class="form-row">
+          <div class="col-md-2"><label>Text</label></div>
+          <div class="col-md-10"><textarea 
+            class="form-control form-control-sm form-post-text" 
+            rows="5" placeholder="Text"></textarea></div>
+        </div></div>
+
+        <div class="form-group"><div class="form-row">
+          <div class="col-md-2"><label>Tags</label></div>
+          <div class="col-md-10"><input type="text" 
+            class="form-control form-control-sm form-post-tags" 
+            value="" placeholder="Tags" /></div>
+        </div></div>
       </form></div><!--body-->
+
       <div id="create-post-success-alert" 
         class="alert alert-success collapse" role="alert">Post saved!</div>
       <div class="modal-footer">
@@ -180,10 +201,6 @@
             <div class="dropdown-item" style="cursor:pointer" data-mode="post">Post now</div>
           </div>
         </div>
-
-        <!--
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        -->
       </div><!--footer-->
     </div></div><!--document-->
   </div><!--modal-->
@@ -192,7 +209,10 @@
     <div class="modal-dialog" role="document"><div class="modal-content">
       <div class="modal-header">
         <div class="avatar collapse"></div>
-        <h5 class="modal-title">Follow new blog</h5>
+        <h5 class="modal-title">
+          <span class="action">Follow</span>
+          <span class="target-name"></span>
+        </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -222,7 +242,10 @@
     <div class="modal-dialog" role="document"><div class="modal-content">
       <div class="modal-header">
         <div class="avatar collapse"></div>
-        <h5 class="modal-title">Unfollow blog</h5>
+        <h5 class="modal-title">
+          <span class="action">Unfollow</span>
+          <span class="target-name"></span>
+        </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -273,11 +296,11 @@
   <% include ../partials/kalona.ejs %>
 
   <script>
-    <% include ../partials/dashboard.ejs %>
+    <%- include('../partials/dashboard.ejs', { home_upload_key: locals.home_upload_key }) %>
     <% include ../partials/reblog_button.ejs %>
+    <% include ../partials/like_button.ejs %>
     <% include ../partials/render_feed.ejs %>
     <% include ../partials/news.ejs %>
-    <% include ../partials/utils.ejs %>
     <% include ../partials/image_uploader.ejs %>
 
     /* 
@@ -292,11 +315,12 @@
 
     var _isPostsPage = window.location.pathname.indexOf("posts") != -1;
     var _isQueuePage = window.location.pathname.indexOf("queue") != -1;
+    var _isLikesPage = window.location.pathname.indexOf("likes") != -1;
 
     /*
      * Dashboard top menu
      */
-    if (_isPostsPage || _isQueuePage)
+    if (_isPostsPage || _isQueuePage || _isLikesPage)
     {
       $("#back-to-dash-button").show();
       $("#dashboard-menu").hide();
@@ -306,26 +330,6 @@
      * Dashboard feed
      */
     var renderUris = <%- JSON.stringify(render_uris) %>;
-
-    // apply style and modify title bar
-    if (renderUris.length == 1 && (_isPostsPage || _isQueuePage))
-    {
-      $.getJSON(renderUris[0], function(data) {
-        if (data.style_url)
-          Utils.addCss(data.style_url);
-
-        var pageLabel = "";
-        if (_isPostsPage) pageLabel = " - Posts - ";
-        if (_isQueuePage) pageLabel = " - Queue - ";
-
-        if (data.name && (_isPostsPage || _isQueuePage))
-          $("title").prepend(data.name + pageLabel);
-        else
-          $("title").prepend("Dashboard - Posts - ");
-      });  
-    }
-    else
-      $("title").prepend("Dashboard - ");
 
     // enable 'post now' button if on Queue page
     if (_isQueuePage)
@@ -341,12 +345,16 @@
           $("#no-posts-message").show();
         else if (_isQueuePage)
           $("#no-queued-message").show();          
+        else if (_isLikesPage)
+        {
+        }
         else
           $("#no-follows-message").show();          
       },
       "postImagePref": ["images", "thumbs"],
       "numPostsPerFetch": <%= NUM_POSTS_PER_FETCH %>,
-      "enforceMasonryOrder": (renderUris.length == 1)? true : false
+      "enforceOrder": (renderUris.length == 1)? true : false,
+      "skipStaleFeeds": (renderUris.length > 2)? true: false
     });
 
     // draw news panels

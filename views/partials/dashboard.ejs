@@ -1,3 +1,5 @@
+<% include ../partials/utils.ejs %>
+
 var Dashboard = new function() {
   this.init = function(cfg) {
     this.postSelector = cfg.postSelector;
@@ -23,10 +25,12 @@ var Dashboard = new function() {
     $(dash.postSelector+"-modal").on('hidden.bs.modal', function() {
       $(this).find('form').get(0).reset(); // clear form
       // reset to 'new post' mode
-      $(dash.postSelector+"-modal h5").html("New post");
+      $(dash.postSelector+"-modal .modal-title .action").html("New post");
       $(dash.postSelector+"-save-button .oi")
         .removeClass('oi-clock').addClass('oi-pencil');
       $(dash.postSelector+"-save-button .label").text("Post");
+      $(dash.postSelector+"-form .form-post-preview").html(
+        "<label>Image</label>");
     });
     $(dash.followSelector+"-modal").on('shown.bs.modal', function() {
       $(this).find('input:text')[0].focus();
@@ -42,9 +46,24 @@ var Dashboard = new function() {
     });
 
     var $pform = $(dash.postSelector+"-form");
+    $pform.find('.form-post-thumb').on('input', function(e) {
+      if (dash._updatePostPreviewTimer)
+        clearTimeout(dash._updatePostPreviewTimer);
+
+      dash._updatePostPreviewTimer = setTimeout(function() {
+        dash.updatePostPreview();
+      }, 2000);
+    });
+    $pform.find('.form-post-image').on('input', function(e) {
+      if (dash._updatePostPreviewTimer)
+        clearTimeout(dash._updatePostPreviewTimer);
+
+      dash._updatePostPreviewTimer = setTimeout(function() {
+        dash.updatePostPreview();
+      }, 2000);
+    });
     $(dash.postSelector+"-save-button").click(function(e) {
       e.preventDefault();
-
       var title = $pform.find('.form-post-title').val();
       var thumb = $pform.find('.form-post-thumb').val();
       var image = $pform.find('.form-post-image').val();
@@ -77,6 +96,13 @@ var Dashboard = new function() {
           .fadeOut(function() {
             $(dash.postSelector+"-modal").modal('hide');
           });
+
+        if (updateId)
+        {
+          // we successfully edited a post -- redirect back to post
+          window.location.href = "/render/" 
+            + Utils.encodeScampyUriParam("/post/" + updateId);
+        }
 
         // remove params from url
         window.history.replaceState(null, null, window.location.pathname);
@@ -170,6 +196,7 @@ var Dashboard = new function() {
     var unfollow = url.searchParams.get("unfollow");
     var reblog = url.searchParams.get("reblog");
     var edit = url.searchParams.get("edit");
+    var like = url.searchParams.get("like");
 
     if (follow)
       this.doFollow(follow);
@@ -179,6 +206,8 @@ var Dashboard = new function() {
       this.doReblog(reblog);
     else if (edit)
       this.doEdit(edit);
+    else if (like)
+      this.doLikePreview(like);
   }
 
   this.doFollow = function(blog) {
@@ -199,95 +228,152 @@ var Dashboard = new function() {
   this.doReblog = function(url) {
     var dash = this;
 
-    $.getJSON(url, function(data) {
-      console.log(data);
-      var $pform = $(dash.postSelector+"-form");
-      $(dash.postSelector+"-modal h5").html("Reblog");
+    $.ajax(Utils.timestampUrl(url), {
+      dataType: "json",
+      crossDomain: true,
+      success: function(data) {
+        console.log(data);
+        var $pform = $(dash.postSelector+"-form");
+        $(dash.postSelector+"-modal .modal-title .action").html("Reblog");
 
-      if (data.post.thumbs)
-        $pform.find('.form-post-thumb').val(data.post.thumbs[0]);
-      if (data.post.images)
-        $pform.find('.form-post-image').val(data.post.images[0]);
-      if (data.post.urls)
-        $pform.find('.form-post-url').val(data.post.urls[0]);
-      $pform.find('.form-post-reblog-url').val(url);
-      if (data.post.text)
-      {
-        var text = "";
-        // indent with markdown blockquote
-        if (data.post.title)
-          text += "> **" + data.post.title + "**\n\n";
-        text += data.post.text.replace(/^/gm, "> ");
-        $pform.find('.form-post-text').val(text);
+        if (data.post.thumbs)
+          $pform.find('.form-post-thumb').val(data.post.thumbs[0]);
+        if (data.post.images)
+          $pform.find('.form-post-image').val(data.post.images[0]);
+        if (data.post.urls)
+          $pform.find('.form-post-url').val(data.post.urls[0]);
+        $pform.find('.form-post-reblog-url').val(url);
+        if (data.post.text)
+        {
+          var text = "";
+          // indent with markdown blockquote
+          if (data.post.title)
+            text += "> **" + data.post.title + "**\n\n";
+          text += data.post.text.replace(/^/gm, "> ");
+          $pform.find('.form-post-text').val(text);
+        }
+
+        dash.updatePostPreview();
+        $("#create-post-modal").modal('show');
       }
-
-      $("#create-post-modal").modal('show');
     });
   }
 
   this.doEdit = function(id) {
     var dash = this;
     var uri = "/post/" + id;
-    $.getJSON(uri, function(data) {
-      console.log(data);
-      var $pform = $(dash.postSelector+"-form");
-      $(dash.postSelector+"-modal h5").html("Edit");
+    $.ajax(Utils.timestampUrl(uri), {
+      dataType: "json",
+      crossDomain: true,
+      success: function(data) {
+        console.log(data);
+        var $pform = $(dash.postSelector+"-form");
+        $(dash.postSelector+"-modal .modal-title .action").html("Edit");
 
-      if (data.post.title)
-        $pform.find('.form-post-title').val(data.post.title);
-      if (data.post.thumbs)
-        $pform.find('.form-post-thumb').val(data.post.thumbs[0]);
-      if (data.post.images)
-        $pform.find('.form-post-image').val(data.post.images[0]);
-      if (data.post.urls)
-        $pform.find('.form-post-url').val(data.post.urls[0]);
-      if (data.post.re_url)
-        $pform.find('.form-post-reblog-url').val(data.post.re_url);
-      if (data.post.text)
-        $pform.find('.form-post-text').val(data.post.text);
-      if (data.post.tags)
-        $pform.find('.form-post-tags').val(data.post.tags.join(','));
-      $pform.find('.form-post-update-id').val(data.post.id);
+        if (data.post.title)
+          $pform.find('.form-post-title').val(data.post.title);
+        if (data.post.thumbs)
+          $pform.find('.form-post-thumb').val(data.post.thumbs[0]);
+        if (data.post.images)
+          $pform.find('.form-post-image').val(data.post.images[0]);
+        if (data.post.urls)
+          $pform.find('.form-post-url').val(data.post.urls[0]);
+        if (data.post.re_url)
+          $pform.find('.form-post-reblog-url').val(data.post.re_url);
+        if (data.post.text)
+          $pform.find('.form-post-text').val(data.post.text);
+        if (data.post.tags)
+          $pform.find('.form-post-tags').val(data.post.tags.join(','));
+        $pform.find('.form-post-update-id').val(data.post.id);
 
-      $("#create-post-modal").modal('show');
+        dash.updatePostPreview();
+        $("#create-post-modal").modal('show');
+      }
     });
+  }
+
+  this.doLikePreview = function(url) {
+
+  }
+
+  this.doLikeDislike = function(likeUrl, deleteLike, cb) {
+    var actionPath = "/like";
+    if (deleteLike)
+      actionPath = "/like/delete";
+
+    $.ajax(actionPath, { 
+      method: "POST",
+      data: { url: likeUrl },
+      dataType: "json",
+      success: function(data, status, xhr) {
+        if (cb)
+          cb();
+      }
+    });
+  }
+
+  this.updatePostPreview = function() {
+    var dash = this;
+    var $pform = $(dash.postSelector+"-form");
+    var thumb = $pform.find('.form-post-thumb').val();
+    var image = $pform.find('.form-post-image').val();
+
+    var previewUrl = null;
+    if (image) previewUrl = image;
+    if (thumb) previewUrl = thumb;
+    if (previewUrl) 
+      $pform.find('.form-post-preview').html(
+        "<img style='width:100%' src='" + previewUrl + "'>");
   }
 
   this.loadSettings = function() {
     var dash = this;
-
     dash._imgUploader = null;
     $.getJSON("/settings?json=1", function(data) {
-
       dash.activateImageUploader(data.imgur_key);
       dash.activateQueuedPosting(data.queue_interval);
       dash.drawModalAvatars(data.avatar_url);
+      dash.drawModalTargetName(data.name);
     });
   }
 
-  this.activateImageUploader = function(key) {
-    if (!key)
-      return;
-
+  this.activateImageUploader = function(extKey) {
     var dash = this;
-    $(dash.postSelector + "-form .form-post-image-uploader-wraper").show();
-
-    this._imgUploader = new ImgurUploader({
-      key: key,
+    var cfg = {
       selector: dash.postSelector + "-form .form-img-file",
       onUploadStart: function() {
+        $(dash.postSelector+"-save-button").attr("disabled", true);
         $(dash.postSelector + "-form .form-img-file-progress")
           .css('height', '3px');
       },
       onUploadDone: function(data) {
+        $(dash.postSelector+"-save-button").removeAttr("disabled");
         $(dash.postSelector + "-form .form-img-file-progress")
           .css('height', '0px');
-        var imgUrl = data.link;
-        $(dash.postSelector + "-form .form-post-image").val(imgUrl);
-        var thumbUrl = imgUrl.replace(/(.+)\.([^/.]+)$/, "$1m.$2");
-        $(dash.postSelector + "-form .form-post-thumb").val(thumbUrl);
+        if (data.thumb)
+          $(dash.postSelector + "-form .form-post-thumb").val(data.thumb);
+        if (data.image)
+          $(dash.postSelector + "-form .form-post-image").val(data.image);
+        if (data.url)
+          $(dash.postSelector + "-form .form-post-url").val(data.url);
+
+        dash.updatePostPreview();
       }
-    });
+    };
+
+    if (extKey)
+    {
+      $(dash.postSelector + "-form .form-post-image-uploader-wrapper").show();
+      cfg.key = extKey;
+      dash._imgUploader = new ImgurUploader(cfg);
+    }
+    else if ("<%= locals.home_upload_key %>") 
+    {
+      $(dash.postSelector + "-form .form-post-image-uploader-wrapper").show();
+      // fallback to our own image uploader
+      cfg.key = "<%= locals.home_upload_key %>";
+      dash._imgUploader = new ScampyUploader(cfg);
+    }
   }
 
   this.activateQueuedPosting = function(interval) {
@@ -300,5 +386,14 @@ var Dashboard = new function() {
 
   this.drawModalAvatars = function(url) {
     $(".modal .avatar").css('background-image', 'url(' + url + ')').show();
+  }
+
+  this.drawModalTargetName = function(name) {
+    if (!name)
+      name = window.location.host;
+
+    $(".modal .modal-title .target-name").html(
+      "<small> <span class='small text-muted oi oi-chevron-right' aria-hidden='true'></span> "
+      + name + "</small>");
   }
 };

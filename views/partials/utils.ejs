@@ -4,8 +4,20 @@ if (typeof Utils === 'undefined')
     this.prettifyBlessedHostUrlForDisplay = function(url) {
       var urlObj = new URL(url);
       var displayUrl = urlObj.host; // strip away protocol
-      displayUrl = displayUrl.split(".herokuapp.com")[0]; // papa bless
+      <% for (var bi = 0; bi < BLESSED_DOMAINS.length; bi++) { %>
+        displayUrl = displayUrl.split("." 
+          + "<%= BLESSED_DOMAINS[bi] %>")[0]; // papa bless
+      <% } %>
       return displayUrl;
+    }
+
+    this.encodeScampyUriParam = function(uri) {
+      uri = uri.replace(/\//g, '|');
+      return encodeURIComponent(uri);
+    }
+    this.decodeScampyUriParam = function(uri) {
+      uri = decodeURIComponent(uri);
+      return uri.replace(/\|/g, '/');
     }
 
     this.handleClick = function(e, url) {
@@ -42,12 +54,36 @@ if (typeof Utils === 'undefined')
           if ($(this).data('make-embeds-responsive-done'))
             return;
 
+          var aspectRatio = 0.5625;
+          if ($(this).attr('width') && $(this).attr('height'))
+            aspectRatio = $(this).attr('height') / $(this).attr('width');
+
           $(this)
-            .wrap('<div class="embed-responsive'
-                + ' embed-responsive-16by9"></div>')
+            .wrap('<div class="embed-responsive"'
+                + ' style="padding-bottom: ' + (aspectRatio*100) + '%"'
+                + '></div>')
             .addClass('embed-responsive-item')
             .data('make-embeds-responsive-done', true);
         });
+    }
+
+    this.makeBsTooltipCfg = function(content) {
+      return {
+        container: 'body',
+        html: true,
+        placement: 'auto',
+        content: content,
+        trigger: 'hover'
+      };
+    }
+
+    this.timestampUrl = function(url) {
+      var ts = (Date.now)? Date.now() : new Date().getTime();
+
+      if (url.indexOf("?") != -1)
+        return url + "&ts=" + ts;
+
+      return url + "?ts=" + ts;
     }
   };
 }

@@ -1,14 +1,26 @@
-## Why are there many extra things I have to manage on my `secret campfire` blog?
+## Why are there many things I have to manage on my `secret campfire`?
 
 Because you are now graduating from a *simple user of the Internet* to an __owner__. And just like with anything else, being an owner comes with responsibilities.
 
-If you want things to be brain-dead simple, there are many other options available where someone else takes care of your blog for you. But as you know, the trade-off when someone runs your blog for you is that you don't really own anything. They own you.
+If you want things to be brain-dead simple, there are many other options available where someone else takes care of your site for you. But as you know, the trade-off when someone runs your site for you is that you don't really own anything. They own you.
 
 If you want the freedom of owning and keeping what you own, there will be a slight learning curve. But these are good things to know, because knowledge is power. For years, all these other sites have happily kept people ignorant, helpless and in the dark. Think about it -- they **don't want you to know** how to run your own site. They make **more money** if you don't know how to run your own site and are completely dependent on them. 
 
 In contrast, `secret campfire` will show you exactly how to run your own server so you can finally be independent and free. But of course, our goal is to make it as simple as possible -- it's only as hard as it needs to be but no harder. In fact, it's so easy... you don't even need a computer.
 
-However, if you're not the DIY type and prefer to have your blogs set up for you, email [getscampy@secretcampfire.com](mailto:getscampy@secretcampfire.com) and we'll take care of you. We'll help you set up 5 blogs for a one-time fee of $5. After they're set up, your blogs belong 100% to you and run free forever.
+However, if you're not the DIY type and prefer to have your `secret campfire` set up for you, email [getscampy@secretcampfire.com](mailto:getscampy@secretcampfire.com) and we'll take care of you. In your email, tell us what  name you want and we'll set you up for a one-time fee of $5. Once set up, your site belongs 100% to you and runs free forever.
+
+--- 
+
+## How do I unlock image file uploads?
+
+[See here.](ADVANCED.md#how-to-unlock-image-file-uploads)
+
+--- 
+
+## How do I unlock Queued Posting?
+
+[See here.](ADVANCED.md#how-to-unlock-queued-posting)
 
 --- 
 
@@ -20,17 +32,19 @@ Like they said in *The Incredibles* movie, "When everyone is super, no one is." 
 
 Think about the biggest Internet companies. Where do they get their profits from? Yup. By providing you some service. Google, Facebook, Twitter, Instagram, etc. They provide you a service and their goal is to get you hooked to their service. Then they make money off you later. E.g. by selling your data to advertisers and showing you ads, or by making you pay for premium features.
 
-And because there are so many companies fighting to get you hooked to their service, the current trend is to let you use their service for free. This is the key.
+And because there are so many companies fighting to get you hooked to their service, they let you use their service for free. This is the key.
 
 Almost every cloud platform today gives you generous free quotas to run your web application. So `secret campfire` was designed to take advantage of this. It's designed to be lightweight and modular, so that each of its components can live entirely within the free budgets of various cloud platforms like Heroku, Google Cloud or Microsoft Azure. It's a win-win because we get a free ride while they get more people using their platform.
 
-## Why does my blog go to sleep after a while, and why does it take a long time to start back up again? 
+--- 
 
-When you deploy your `secret campfire` blog on Heroku for free, they set you up on their free `Dyno`. By default, that gives you 550 free hours per month. And if it receives no traffic for 30 minutes, your `Dyno` goes to sleep. If your blog gets visited while asleep, it will wake up again after a short delay. (https://devcenter.heroku.com/articles/free-dyno-hours).
+## Why does my Heroku instance go to sleep after a while, and why does it take a long time to start back up again? 
 
-To prevent your blog from sleeping, you can set up a service like Pingdom or New Relic to periodically ping your site. But if you do that, your blog will run 24/7 and you'll blow through your free quota in 23 days. 
+When you deploy your `secret campfire` on Heroku for free, they set you up on their free `Dyno`. By default, that gives you 550 free hours per month. And if it receives no traffic for 30 minutes, your `Dyno` goes to sleep. If your site gets visited while asleep, it will wake up again after a short delay. (https://devcenter.heroku.com/articles/free-dyno-hours).
 
-To keep your blog running 24/7 forever, you'll have to add your credit card to Heroku. That upgrades you to 1000 free hours per month. Your card will not be charged as long as you stay on the free tier.
+To prevent your site from sleeping, you can set up a service like Pingdom or New Relic to periodically ping your site. But if you do that, your site will run 24/7 and you'll blow through your free quota in 23 days. 
+
+To keep your site running 24/7 forever, you'll have to add your credit card to Heroku. That upgrades you to 1000 free hours per month. Your card will not be charged as long as you stay on the free tier.
 
 --- 
 
@@ -47,23 +61,11 @@ If you are opposed to this, you can still use `secret campfire` without a credit
 
 --- 
 
-## How can I have multiple blogs?
+## How can I have multiple `secret campfire` sites?
 
-First, repeat the steps in the [Quickstart](../README.md#quickstart-instructions-time-needed-5-minutes) for each new blog you want to create. 
+First, repeat the steps in the [README](../README.md) for each new `secret campfire` you want to create. 
 
-Then, as you sign in to each of your blogs, `secret campfire` remembers all the blogs you own. All your connected blogs appear in a handy menu at the top right of the screen. Select the blog you want to browse as, and all your `secret campfire` actions will be performed for your selected blog. E.g., if you select your *first blog* from the menu and then click a `Reblog` button on a post, the post will be reblogged to your *first blog*. 
-
---- 
-
-## How do I unlock image file uploads?
-
-[See here.](ADVANCED.md#how-to-unlock-image-file-uploads)
-
---- 
-
-## How do I unlock Queued Posting?
-
-[See here.](ADVANCED.md#how-to-unlock-queued-posting)
+Then, as you sign in to each of your sites, `secret campfire` remembers all the sites you own. All your connected sites appear in a handy menu at the top right of the screen. Select the `secret campfire` you want to browse as, and all your `secret campfire` actions will be performed for your selected site. E.g., if you select your *first site* from the menu and then click a `Reblog` button on a post, the post will be reblogged to your *first site*. 
 
 --- 
 
@@ -77,9 +79,9 @@ Finally, open up your Database. Open your `settings` collection. Replace the old
 
 ---
 
-## How do I upgrade my `secret campfire` blog to the latest official version?
+## How do I upgrade my `secret campfire` to the latest official version?
 
-[See here.](ADVANCED.md#how-to-upgrade-your-secret-campfire-blog-to-the-latest-official-version)
+[See here.](ADVANCED.md#how-to-upgrade-your-secret-campfire-to-the-latest-official-version)
 
 --- 
 

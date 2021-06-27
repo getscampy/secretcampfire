@@ -2,29 +2,51 @@
 <div class="jumbotron jumbotron-fluid" id="jumbotron"></div>
 <div id="masthead" class="collapse">
   <div class="text-center">
-    <a href="/"><div class="d-inline-block avatar collapse"></div></a>
+    <a class="link-to-site" href="/">
+      <div class="d-inline-block avatar collapse"></div>
+    </a>
   </div>
   <div class="text-center">
     <div class="d-inline-block">
-      <a href="/"><h1 class="collapse"></h1></a>
+      <a class="link-to-site" href="/"><h1 class="collapse"></h1></a>
     </div>
   </div>
   <p class="lead collapse"></p>
+  <p class="tags collapse"></p>
 </div>
 
 <script>
+<% include ../partials/utils.ejs %>
+
 var Masthead = new function() {
   this.init = function(uri) {
     this.uri = uri;
+    this._mdConverter = new showdown.Converter();
 
     this.update();
-  };
+  }
+
+  this.reset = function() {
+    if ($("#masthead-head-marker").length == 0)
+    {
+      // first time, inject marker into <head> 
+      // to mark where orig head content ended
+      $("head").append("<script id='masthead-head-marker'><\/script>");
+    }
+
+    // delete everything we added after our marker
+    $("#masthead-head-marker").nextAll().remove();
+
+    // reset title
+    $("title").html($("title").html().split(" - ").slice(-1)[0]); 
+  }
 
   this.update = function() {
     if (typeof NsfwOverlay !== 'undefined')
       NsfwOverlay.open();
 
-    $.getJSON(this.uri, function(data) {
+    var mh = this;
+    $.getJSON(Utils.timestampUrl(this.uri), function(data) {
       if (typeof NsfwOverlay !== 'undefined')
       {
         if (data.nsfw)
@@ -33,9 +55,12 @@ var Masthead = new function() {
           NsfwOverlay.close();
       }
 
-      // set site info
-      if (data.name)
-        $("title").prepend(data.name + " - ");
+      mh.reset();
+
+      /*
+       * set site info
+       */
+      mh.setTitleBar(data);
       $("head")
         .append('<meta property="og:title" content="' + data.name + '">')
         .append('<meta property="og:description" content="' 
@@ -46,7 +71,9 @@ var Masthead = new function() {
         .append('<meta property="og:image" content="' + data.avatar_url + '">')
         .append('<meta property="og:type" content="website">');
 
-      // set jumbotron
+      /*
+       * set jumbotron
+       */
       if (data.header_url)
         $("#jumbotron").css('background-image', 
           'url(' + data.header_url + ')')
@@ -55,7 +82,9 @@ var Masthead = new function() {
         $("#jumbotron").css('background-image', 'url()')
           .removeClass('active').addClass('inactive');
 
-      // set masthead
+      /*
+       * set masthead
+       */
       if (data.name || data.description || data.avatar_url)
       {
         $("#masthead").show();
@@ -72,18 +101,63 @@ var Masthead = new function() {
           $("#masthead h1").html("").hide();
 
         if (data.description)
-          $("#masthead .lead").html(data.description).show();
+        {
+          var markdown = mh._mdConverter.makeHtml(data.description);
+          $("#masthead .lead").html(markdown).show();
+        }
         else
           $("#masthead .lead").html("").hide();
 
         if (data.blog_url)
-          $("#masthead a").attr('href', data.blog_url);
+          $("#masthead a.link-to-site").attr('href', data.blog_url);
         else
-          $("#masthead a").attr('href', "/");
+          $("#masthead a.link-to-site").attr('href', "/");
       }
       else
         $("#masthead").hide();
+
+      if (data.style_url)
+        Utils.addCss(data.style_url);
+
+      if (data.dark_mode)
+        Utils.addCss("<%= DARK_MODE_CSS %>");
     });
+
+    if (this.uri.indexOf("/feed") != -1)
+    {
+      var tagsUri = this.uri.replace("/feed", "/tags");
+      $.getJSON(Utils.timestampUrl(tagsUri), function(data) {
+        if (!data || data.length == 0)
+          return;
+
+        $("#masthead .tags").html("");
+        for (var ti=0; ti < data.length; ti++)
+        {
+          var tag = data[ti]._id;
+          $("#masthead .tags").append(
+            "<div class='d-inline-block tag small px-1'>"
+              + "<a href='/tag/" + tag + "'>#" + tag + "</a></div>");
+        }
+        $("#masthead .tags").show();
+      });
+    }
+  }
+
+  this.setTitleBar = function(data) {
+    var pageLabel = "";
+    if (window.location.pathname.indexOf("/dashboard/posts") != -1)
+      pageLabel = "Dashboard - Posts - ";
+    else if (window.location.pathname.indexOf("/dashboard/queue") != -1)
+      pageLabel = "Dashboard - Queue - ";
+    else if (window.location.pathname.indexOf("/dashboard") != -1)
+      pageLabel = "Dashboard - ";
+    else if (window.location.pathname.indexOf("/settings") != -1)
+      pageLabel = "Settings - ";
+
+    $("title").prepend(pageLabel);
+
+    if (data.name)
+      $("title").prepend(data.name + " - ");
   }
 };
 

@@ -2,6 +2,9 @@
 <html>
 <head>
   <% include ../partials/header.ejs %>
+  <% if (typeof site_template !== 'undefined' && site_template.dark_mode) { %>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/dark.css" />
+  <% }  %>
 </head>
 
 <body>
@@ -31,15 +34,15 @@
 
           <div class="form-group">
           <label>Blog description</label>
-          <input type="text" class="form-control form-control-sm form-description" 
-            value="<%= settings.description %>" placeholder="Blog description" />
+          <textarea class="form-control form-control-sm form-description" 
+            placeholder="Blog description" rows=1><%= settings.description %></textarea>
           </div>
 
           <div class="form-group">
           <label>Avatar image URL</label>
           <input type="text" class="form-control form-control-sm form-avatar" 
             value="<%= settings.avatar_url %>" placeholder="Avatar image URL" />
-          <% if (settings.imgur_key) {%>
+          <% if (settings.imgur_key || home_upload_key) {%>
           <div class="progress form-avatar-file-progress" style="height: 0px">
             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
@@ -51,7 +54,7 @@
           <label>Header image URL</label>
           <input type="text" class="form-control form-control-sm form-header" 
             value="<%= settings.header_url %>" placeholder="Header image URL" />
-          <% if (settings.imgur_key) {%>
+          <% if (settings.imgur_key || home_upload_key) {%>
           <div class="progress form-header-file-progress" style="height: 0px">
             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
@@ -66,13 +69,24 @@
           </div>
 
           <div class="form-group"><div class="form-check">
+          <input class="form-check-input form-darkmode" type="checkbox" 
+            <%if (settings.dark_mode) { %>
+            checked
+            <% } %>
+            id="check-darkmode">
+          <label class="form-check-label" for="check-darkmode">
+            dark mode
+          </label>
+          </div></div>
+
+          <div class="form-group"><div class="form-check">
           <input class="form-check-input form-nsfw" type="checkbox" 
             <%if (settings.nsfw) { %>
             checked
             <% } %>
             id="check-nsfw">
           <label class="form-check-label" for="check-nsfw">
-            has NSFW content
+            NSFW content - I am over 18 years old
           </label>
           </div></div>
 
@@ -81,14 +95,10 @@
           </a>
           <div id="advanced-settings" class="collapse mt-2">
             <div class="form-group">
-            <label>Imgur client ID</label>
-            <input type="text" class="form-control form-control-sm form-imgur-key" 
-             value="<%= settings.imgur_key %>" placeholder="Imgur client ID (to unlock image file uploads)" />
-            </div>
-
-            <div class="form-group">
-              <label>Auto-publish queued posts<br/>
-                <div class="small">warning: using queued posts may prevent your blog from sleeping</div></label>
+              <label>Auto-publish queued posts every X minutes
+                (<a href="https://github.com/secretsciencelab/secretcampfire/blob/master/docs/ADVANCED.md#how-to-unlock-queued-posting">info</a>)
+                <br/>
+                <!--<div class="small">warning: using queued posts may prevent your blog from sleeping</div>--></label>
             <input type="text" class="form-control form-control-sm form-queue-interval" 
              <% if (settings.queue_interval) { %>
               value="<%= settings.queue_interval %>"
@@ -97,6 +107,30 @@
              <% } %>
              placeholder="E.g., enter '60' for 'every 60 minutes'" />
             </div>
+
+            <div class="form-group">
+            <label>Imgur client ID 
+              (<a href="https://github.com/secretsciencelab/secretcampfire/blob/master/docs/ADVANCED.md#how-to-unlock-image-file-uploads">info</a>)
+            </label>
+            <input type="text" class="form-control form-control-sm form-imgur-key" 
+             value="<%= settings.imgur_key %>" placeholder="Imgur client ID (to use Imgur for image file uploads)" />
+            </div>
+
+            <div class="form-group">
+            <label>&lt;head&gt; custom code</label>
+            <textarea class="form-control form-control-sm form-custom-head" 
+              placeholder="Custom code to inject into <head>" rows=1><%= settings.custom_head %></textarea>
+            </div>
+
+            <% if (home_upload_key) { %>
+            <!--
+            <div class="form-group"><div class="">
+              To upload a folder of images from your laptop/PC, download our <a href="http://vps.secretcampfire.com/uploader">Image Uploader</a>.
+              Your Upload Key is <span class="text-monospace"><%= home_upload_key %></span>
+            </div></div>
+            -->
+            <% } %>
+
           </div><!--advanced-settings-->
 
         </form>
@@ -124,11 +158,13 @@
       var avatar = form.find('.form-avatar').val();
       var header = form.find('.form-header').val();
       var password = form.find('.form-password').val();
+      var darkMode = form.find('.form-darkmode').is(":checked");
       var nsfw = form.find('.form-nsfw').is(":checked");
       var imgur = form.find('.form-imgur-key').val();
       var queueInterval = form.find('.form-queue-interval').val();
       if (!queueInterval)
           queueInterval = 0;
+      var customHead = form.find('.form-custom-head').val();
 
       $.post('/settings', { 
         name: name,
@@ -136,9 +172,11 @@
         avatar_url: avatar,
         header_url: header,
         password: password,
+        dark_mode: darkMode,
         nsfw: nsfw,
         imgur_key: imgur,
-        queue_interval: queueInterval
+        queue_interval: queueInterval,
+        custom_head: customHead
       },
       function(data, status, xhr) {
         // success
@@ -155,29 +193,47 @@
       return false;
     });
 
-    var avatarUploader = new ImgurUploader({
-      selector: "#settings-form .form-avatar-file",
-      key: "<%= settings.imgur_key %>",
-      onUploadStart: function() {
-        $("#settings-form .form-avatar-file-progress").css('height', '3px');
-      },
-      onUploadDone: function(data) {
-        $("#settings-form .form-avatar-file-progress").css('height', '0px');
-        $("#settings-form .form-avatar").val(data.link);
-      }
-    });
+    <% if (settings.imgur_key || home_upload_key) { %>
+      var avatarUploaderCfg = {
+        selector: "#settings-form .form-avatar-file",
+        onUploadStart: function() {
+          $("#settings-save-button").attr("disabled", true);
+          $("#settings-form .form-avatar-file-progress").css('height', '3px');
+        },
+        onUploadDone: function(data) {
+          $("#settings-save-button").removeAttr("disabled");
+          $("#settings-form .form-avatar-file-progress").css('height', '0px');
+          $("#settings-form .form-avatar").val(data.thumb);
+        }
+      };
 
-    var headerUploader = new ImgurUploader({
-      selector: "#settings-form .form-header-file",
-      key: "<%= settings.imgur_key %>",
-      onUploadStart: function() {
-        $("#settings-form .form-header-file-progress").css('height', '3px');
-      },
-      onUploadDone: function(data) {
-        $("#settings-form .form-header-file-progress").css('height', '0px');
-        $("#settings-form .form-header").val(data.link);
-      }
-    });
+      var headerUploaderCfg = {
+        selector: "#settings-form .form-header-file",
+        onUploadStart: function() {
+          $("#settings-save-button").attr("disabled", true);
+          $("#settings-form .form-header-file-progress").css('height', '3px');
+        },
+        onUploadDone: function(data) {
+          $("#settings-save-button").removeAttr("disabled");
+          $("#settings-form .form-header-file-progress").css('height', '0px');
+          $("#settings-form .form-header").val(data.image);
+        }
+      };
+
+      var avatarUploader = null;
+      var headerUploader = null;
+      <% if (settings.imgur_key) { %>
+      avatarUploaderCfg.key = "<%= settings.imgur_key %>";
+      headerUploaderCfg.key = "<%= settings.imgur_key %>";
+      var avatarUploader = new ImgurUploader(avatarUploaderCfg);
+      var headerUploader = new ImgurUploader(headerUploaderCfg);
+      <% } else if (home_upload_key) { %>
+      avatarUploaderCfg.key = "<%= home_upload_key %>";
+      headerUploaderCfg.key = "<%= home_upload_key %>";
+      var avatarUploader = new ScampyUploader(avatarUploaderCfg);
+      var headerUploader = new ScampyUploader(headerUploaderCfg);
+      <% } %>
+    <% } %>
   </script>
 </body>
 </html>

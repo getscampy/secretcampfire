@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Secret Campfire - image uploader</title>
+    <style>
+      body {
+        font-family: arial;
+        padding: 20px;
+        text-align: center;
+      }
+      h1 {
+        margin-bottom: 30px;
+      }
+      body > div {
+        margin: 10px 0px;
+      }
+      #post-image-status {
+        font-family: monospace;
+        max-height: 100px;
+        overflow-y: scroll;
+      }
+      #logo {
+        height: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="logo" src="assets/logoLight.png">
+
+    <h1>Secret Campfire<br/><small>image uploader</small></h1>
+
+    <div>
+      Secret Campfire URL:<br/>
+      <input type="text" id="url" />
+    </div>
+
+    <div>
+      Secret Campfire password:<br/>
+      <input type="text" id="password" />
+    </div>
+
+    <div>
+      Upload key:</br>
+      <input type="text" id="key" />
+    </div>
+
+    <div class="spacer">&nbsp;</div>
+
+    <div>
+    <button id="open-dir" class="">Post image folder</button>
+    <div id="post-image-status"></div>
+    </div>
+
+    <div class="spacer">&nbsp;</div>
+
+    <div>
+      <em>secretcampfire.com</em>
+    </div>
+
+    <script>
+      require('./renderer.js');
+    </script>
+  </body>
+</html>

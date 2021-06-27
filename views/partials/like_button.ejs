@@ -1,0 +1,83 @@
+<% include ../partials/utils.ejs %>
+
+var LikeButton = new function() { 
+  this.activate = function(els) {
+    this.updateStatus(els);
+
+    var obj = this;
+    els.each(function() {
+      var lb = $(this);
+
+      if (lb.data('like-action-bound'))
+        return;
+
+      lb.mouseup(function(e) {
+        var leftClick = e.which == 1;
+        var middleClick = e.which == 2;
+        if (!leftClick && !middleClick)
+          return;
+          
+        e.preventDefault();
+
+        var likeUrl = lb.data('like-url');
+        SetBlogWidget.getBlog(function(url) {
+          obj.handleLike(lb, url, likeUrl, middleClick);
+        });
+
+        return false;
+      })
+      .data('like-action-bound', true);
+    });
+  };
+
+  this.updateStatus = function(els) {
+    SetBlogWidget.getBlog(function(url) {
+      if (!url)
+        return;
+      els.each(function() {
+        var lb = $(this);
+        var likeUrl = lb.data('like-url');
+        var checkUrl = url
+            + "/like/check/"
+            + Utils.encodeScampyUriParam(likeUrl);
+        $.ajax(Utils.timestampUrl(checkUrl), {
+          dataType: "json",
+          success: function(data) {
+            if (data && data.is_liked)
+              lb.data('liked', true).addClass('liked'); 
+            else
+              lb.data('liked', null).removeClass('liked'); 
+          },
+          crossDomain: true
+        });
+      });
+    }, /*checkOnly*/true);
+  };
+
+  this.handleLike = function(lb, userUrl, likeUrl, openNewTab) {
+    var targetUrl = userUrl + "/dashboard?like=" 
+      + encodeURIComponent(likeUrl);
+    if (openNewTab)
+    {
+      var tab = window.open(targetUrl, '_blank');
+      tab.focus();
+      return;
+    }
+
+    var urlObj = new URL(userUrl);
+    if (window.location.host == urlObj.host 
+      && window.location.pathname.indexOf("/dashboard") != -1
+      && typeof Dashboard !== 'undefined')
+    {
+      // already on Dashboard -- just invoke Dashboard directly
+      var obj = this;
+      var deleteLike = lb.data('liked')? true : false;
+      Dashboard.doLikeDislike(likeUrl, deleteLike, function() {
+        obj.updateStatus(lb);
+      });
+      return;
+    }
+
+    window.location.href = targetUrl;
+  };
+};
